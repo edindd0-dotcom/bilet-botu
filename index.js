@@ -19,8 +19,8 @@ const client = new Client({
   ]
 });
 
-const TOKEN = "BOT_TOKENİNİ_YAZ";
-const YETKILI_ROL_ID = "YETKILI_ROL_ID_YAZ";
+const TOKEN = process.env.TOKEN;
+const YETKILI_ROL_ID = "1475067665881239748";
 
 // Ticket sayacı
 let data = { count: 0 };
