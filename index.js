@@ -22,7 +22,6 @@ const client = new Client({
 const TOKEN = process.env.TOKEN;
 const YETKILI_ROL_ID = "1475067665881239748";
 
-// Ticket sayacı
 let data = { count: 0 };
 
 if (fs.existsSync("./ticket.json")) {
@@ -40,25 +39,24 @@ client.once("ready", () => {
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  // Ticket panel
-  if (message.content === "!ticketpanel") {
+  if (message.content === "!panel") {
+
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId("create_ticket")
+        .setCustomId("ticket_ac")
         .setLabel("🎫 Ticket Aç")
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(ButtonStyle.Success)
     );
 
     message.channel.send({
-      content: "Ticket açmak için butona bas.",
+      content: "Destek almak için butona bas.",
       components: [row]
     });
   }
 
-  // Ticket silme
   if (message.content === "$delete") {
     if (message.channel.name.startsWith("bilet-")) {
-      message.channel.send("🗑 Ticket 5 saniye sonra siliniyor...");
+      message.channel.send("🗑 5 saniye sonra kapanıyor...");
       setTimeout(() => {
         message.channel.delete().catch(() => {});
       }, 5000);
@@ -69,7 +67,7 @@ client.on("messageCreate", async (message) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
-  if (interaction.customId === "create_ticket") {
+  if (interaction.customId === "ticket_ac") {
 
     data.count++;
     saveData();
@@ -102,7 +100,7 @@ client.on("interactionCreate", async (interaction) => {
     });
 
     channel.send(`🎫 ${interaction.user} ticket açtı.\n\nKapatmak için **$delete** yaz.`);
-
+    
     interaction.reply({
       content: `Ticket oluşturuldu: ${channel}`,
       ephemeral: true
