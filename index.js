@@ -20,7 +20,7 @@ const client = new Client({
 });
 
 const TOKEN = process.env.TOKEN;
-const YETKILI_ROL_ID = "1475067665881239748";
+const YETKILI_ROL_ID = "1476645987387965457";
 
 let data = { count: 0 };
 
