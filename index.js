@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, AuditLogEvent } = require("discord.js");
 
 const client = new Client({
   intents: [
@@ -11,59 +11,65 @@ const client = new Client({
 });
 
 const LOG_CHANNEL_ID = "1476645987387965457";
-
-const inviteCache = new Map();
-const inviteCount = new Map();
+const invites = new Map();
 
 client.once("ready", async () => {
-  console.log(`${client.user.tag} aktif!`);
+  console.log(`${client.user.tag} aktif`);
 
   for (const guild of client.guilds.cache.values()) {
-    const invites = await guild.invites.fetch();
-    inviteCache.set(guild.id, invites);
+    const guildInvites = await guild.invites.fetch();
+    invites.set(guild.id, guildInvites);
   }
 });
 
-client.on("guildMemberAdd", async (member) => {
+client.on("inviteCreate", async invite => {
+  const guildInvites = await invite.guild.invites.fetch();
+  invites.set(invite.guild.id, guildInvites);
+});
+
+client.on("inviteDelete", async invite => {
+  const guildInvites = await invite.guild.invites.fetch();
+  invites.set(invite.guild.id, guildInvites);
+});
+
+client.on("guildMemberAdd", async member => {
   const guild = member.guild;
+  const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
+  if (!logChannel) return;
 
   const newInvites = await guild.invites.fetch();
-  const oldInvites = inviteCache.get(guild.id);
+  const oldInvites = invites.get(guild.id);
 
-  inviteCache.set(guild.id, newInvites);
+  invites.set(guild.id, newInvites);
 
-  if (!oldInvites) return;
+  let usedInvite = null;
 
-  const usedInvite = newInvites.find(inv => {
-    const old = oldInvites.get(inv.code);
-    return old && inv.uses > old.uses;
-  });
-
-  if (!usedInvite) return;
-
-  const inviter = usedInvite.inviter;
-  if (!inviter) return;
-
-  const current = inviteCount.get(inviter.id) || 0;
-  inviteCount.set(inviter.id, current + 1);
-
-  const channel = guild.channels.cache.get(LOG_CHANNEL_ID);
-  if (!channel) return;
-
-  channel.send(
-    `🎉 ${member.user.tag} katıldı!\n` +
-    `👤 Davet eden: ${inviter.tag}\n` +
-    `📊 Toplam daveti: ${inviteCount.get(inviter.id)}`
-  );
-});
-
-client.on("messageCreate", (message) => {
-  if (message.author.bot) return;
-
-  if (message.content === "!davet") {
-    const count = inviteCount.get(message.author.id) || 0;
-    message.reply(`📊 Toplam davetin: ${count}`);
+  if (oldInvites) {
+    usedInvite = newInvites.find(inv => {
+      const old = oldInvites.get(inv.code);
+      return old && inv.uses > old.uses;
+    });
   }
+
+  // Eğer normal invite bulunamazsa vanity kontrol
+  if (!usedInvite && guild.vanityURLCode) {
+    try {
+      const vanityData = await guild.fetchVanityData();
+      logChannel.send(
+        `🎉 ${member.user.tag} katıldı!\n🔗 Vanity URL kullanıldı.\n📊 Toplam kullanım: ${vanityData.uses}`
+      );
+      return;
+    } catch {}
+  }
+
+  if (!usedInvite) {
+    logChannel.send(`🎉 ${member.user.tag} katıldı!\n❓ Davet eden bulunamadı.`);
+    return;
+  }
+
+  logChannel.send(
+    `🎉 ${member.user.tag} katıldı!\n👤 Davet eden: ${usedInvite.inviter.tag}\n📊 Davet kullanım: ${usedInvite.uses}`
+  );
 });
 
 client.login(process.env.TOKEN);
