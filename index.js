@@ -1,3 +1,6 @@
+client.on("guildMemberAdd", (member) => {
+  console.log("EVENT ÇALIŞTI:", member.user.tag);
+});
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
 const client = new Client({
